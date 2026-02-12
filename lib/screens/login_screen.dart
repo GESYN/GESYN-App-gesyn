@@ -80,10 +80,35 @@ class _LoginScreenState extends State<LoginScreen> {
                                 context,
                               ).pushReplacementNamed(AuthRoute.home);
                             } else {
-                              final err = res['error'];
+                              // Extrai a mensagem de erro
+                              String errorMessage = 'Falha no login';
+
+                              final error = res['error'];
+                              if (error is Map) {
+                                // Tenta pegar a mensagem do objeto de erro
+                                errorMessage =
+                                    error['message']?.toString() ??
+                                    error['error']?.toString() ??
+                                    'Credenciais inválidas';
+                              } else if (error is String) {
+                                errorMessage = error;
+                              }
+
+                              // Traduz mensagens comuns
+                              if (errorMessage.toLowerCase().contains(
+                                'invalid credentials',
+                              )) {
+                                errorMessage = 'Email ou senha incorretos';
+                              } else if (errorMessage.toLowerCase().contains(
+                                'unauthorized',
+                              )) {
+                                errorMessage =
+                                    'Não autorizado. Verifique suas credenciais';
+                              }
+
                               await GsModal(
                                 parentContext: context,
-                                text: err?.toString() ?? 'Login failed',
+                                text: errorMessage,
                                 type: GsModalType.error,
                               ).show();
                             }

@@ -7,6 +7,7 @@ import '../widgets/dashboard_summary_card.dart';
 import '../widgets/device_card.dart';
 import '../models/dashboard_data.dart';
 import '../services/dashboard_service.dart';
+import '../services/api_exception.dart';
 import '../routes.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -50,21 +51,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final userStore = Provider.of<UserStore>(context, listen: false);
 
-    final data = await DashboardService.getDashboardData(
-      token: userStore.accessToken,
-      deviceType: _selectedDeviceType,
-      status: _selectedStatus,
-      hours: _selectedHours,
-    );
+    try {
+      final data = await DashboardService.getDashboardData(
+        token: userStore.accessToken,
+        deviceType: _selectedDeviceType,
+        status: _selectedStatus,
+        hours: _selectedHours,
+      );
 
-    setState(() {
-      _loading = false;
-      if (data != null) {
-        _dashboardData = data;
-      } else {
-        _error = 'Erro ao carregar dados do dashboard';
+      setState(() {
+        _loading = false;
+        if (data != null) {
+          _dashboardData = data;
+        } else {
+          _error = 'Erro ao carregar dados do dashboard';
+        }
+      });
+    } on UnauthorizedException {
+      // Token expirado - desloga o usuário
+      if (mounted) {
+        userStore.logout();
+        Navigator.of(context).pushReplacementNamed(AuthRoute.login);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sessão expirada. Por favor, faça login novamente.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
       }
-    });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = 'Erro ao carregar dados do dashboard';
+      });
+    }
   }
 
   void _clearFilters() {
@@ -411,11 +432,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // Carrossel de dispositivos
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      final screenHeight = MediaQuery.of(context).size.height;
-                      final cardHeight = 900.0;
-
                       return SizedBox(
-                        height: cardHeight,
+                        height: 2000,
                         child: PageView.builder(
                           controller: _devicePageController,
                           itemCount: _dashboardData!.devices.length,

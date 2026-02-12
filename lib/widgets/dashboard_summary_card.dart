@@ -137,7 +137,9 @@ class DashboardSummaryCard extends StatelessWidget {
                 _buildInfoItem(
                   Icons.access_time,
                   'Última atualização',
-                  _formatTime(summary.lastUpdate),
+                  summary.lastUpdate != null
+                      ? _formatTime(summary.lastUpdate!)
+                      : 'N/A',
                 ),
               ],
             ),

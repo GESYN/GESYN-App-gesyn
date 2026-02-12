@@ -29,43 +29,66 @@ class UserStore extends ChangeNotifier {
   Future<Map<String, dynamic>> login(String email, String password) async {
     _loading = true;
     notifyListeners();
-    final resp = await ApiService.post('/api/v1/auth/login', {
-      'email': email,
-      'password': password,
-    });
-    _loading = false;
-    if (resp.statusCode == 200) {
-      final data = jsonDecode(resp.body);
-      await _saveTokensAndUser(data);
+
+    try {
+      final resp = await ApiService.post(
+        '/api/v1/auth/login',
+        {'email': email, 'password': password},
+        throwOn401: false, // Não lançar exceção no login
+      );
+
+      _loading = false;
       notifyListeners();
-      return {'ok': true, 'data': data};
-    } else {
-      try {
-        final err = jsonDecode(resp.body);
-        return {'ok': false, 'status': resp.statusCode, 'error': err};
-      } catch (e) {
-        return {'ok': false, 'status': resp.statusCode, 'error': resp.body};
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        await _saveTokensAndUser(data);
+        return {'ok': true, 'data': data};
+      } else {
+        try {
+          final err = jsonDecode(resp.body);
+          return {'ok': false, 'status': resp.statusCode, 'error': err};
+        } catch (e) {
+          return {'ok': false, 'status': resp.statusCode, 'error': resp.body};
+        }
       }
+    } catch (e) {
+      _loading = false;
+      notifyListeners();
+      return {'ok': false, 'error': e.toString()};
     }
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> body) async {
     _loading = true;
     notifyListeners();
-    final resp = await ApiService.post('/api/v1/auth/register', body);
-    _loading = false;
-    if (resp.statusCode == 201 || resp.statusCode == 200) {
-      final data = jsonDecode(resp.body);
-      await _saveTokensAndUser(data);
+
+    try {
+      final resp = await ApiService.post(
+        '/api/v1/auth/register',
+        body,
+        throwOn401: false, // Não lançar exceção no registro
+      );
+
+      _loading = false;
       notifyListeners();
-      return {'ok': true, 'data': data};
-    } else {
-      try {
-        final err = jsonDecode(resp.body);
-        return {'ok': false, 'status': resp.statusCode, 'error': err};
-      } catch (e) {
-        return {'ok': false, 'status': resp.statusCode, 'error': resp.body};
+
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        final data = jsonDecode(resp.body);
+        await _saveTokensAndUser(data);
+        return {'ok': true, 'data': data};
+      } else {
+        try {
+          final err = jsonDecode(resp.body);
+          return {'ok': false, 'status': resp.statusCode, 'error': err};
+        } catch (e) {
+          return {'ok': false, 'status': resp.statusCode, 'error': resp.body};
+        }
       }
+    } catch (e) {
+      _loading = false;
+      notifyListeners();
+      return {'ok': false, 'error': e.toString()};
     }
   }
 
@@ -102,7 +125,8 @@ class UserStore extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> refresh() async {
-    if (_refreshToken == null) return {'ok': false, 'error': 'no refresh token'};
+    if (_refreshToken == null)
+      return {'ok': false, 'error': 'no refresh token'};
     final resp = await ApiService.post('/api/v1/auth/refresh', {});
     if (resp.statusCode == 200) {
       final data = jsonDecode(resp.body);
@@ -115,7 +139,10 @@ class UserStore extends ChangeNotifier {
 
   Future<Map<String, dynamic>> loadProfile() async {
     if (!isAuthenticated) return {'ok': false, 'error': 'not authenticated'};
-    final resp = await ApiService.get('/api/v1/auth/profile', token: _accessToken);
+    final resp = await ApiService.get(
+      '/api/v1/auth/profile',
+      token: _accessToken,
+    );
     if (resp.statusCode == 200) {
       final data = jsonDecode(resp.body);
       _user = User.fromJson(Map<String, dynamic>.from(data));

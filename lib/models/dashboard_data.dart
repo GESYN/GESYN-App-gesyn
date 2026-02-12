@@ -29,7 +29,7 @@ class DashboardSummary {
   final int totalReadings;
   final int recentReadings;
   final int periodHours;
-  final DateTime lastUpdate;
+  final DateTime? lastUpdate;
   final Map<String, dynamic> filters;
 
   DashboardSummary({
@@ -39,7 +39,7 @@ class DashboardSummary {
     required this.totalReadings,
     required this.recentReadings,
     required this.periodHours,
-    required this.lastUpdate,
+    this.lastUpdate,
     required this.filters,
   });
 
@@ -51,7 +51,9 @@ class DashboardSummary {
       totalReadings: json['totalReadings'] ?? 0,
       recentReadings: json['recentReadings'] ?? 0,
       periodHours: json['periodHours'] ?? 24,
-      lastUpdate: DateTime.parse(json['lastUpdate']),
+      lastUpdate: json['lastUpdate'] != null
+          ? DateTime.parse(json['lastUpdate'])
+          : null,
       filters: json['filters'] ?? {},
     );
   }
