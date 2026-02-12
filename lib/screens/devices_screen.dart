@@ -4,9 +4,9 @@ import 'dart:ui';
 import '../stores/user_store.dart';
 import '../models/device.dart';
 import '../services/device_service.dart';
-import '../services/bluetooth_service.dart';
 import '../widgets/app_drawer.dart';
 import '../routes.dart';
+import 'add_device_flow_screen.dart';
 
 const kBackgroundColor = Color(0xFF0A0E27);
 const kCardColor = Color(0xFF1A1F3A);
@@ -416,219 +416,17 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 
   Future<void> _activateDevice(Device device) async {
-    // Primeiro, solicita as credenciais WiFi do usuário
-    final wifiConfig = await _showWiFiConfigDialog();
+    // Redireciona para o fluxo de ativação com o dispositivo existente
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddDeviceFlowScreen(existingDevice: device),
+      ),
+    );
 
-    if (wifiConfig == null) {
-      // Usuário cancelou
-      return;
+    // Se retornou true, significa que foi ativado com sucesso
+    if (result == true) {
+      _loadDevices(); // Recarrega a lista
     }
-
-    final userStore = Provider.of<UserStore>(context, listen: false);
-
-    // Mostra dialog de progresso do fluxo de ativação
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text(
-              'Conectando ao dispositivo via Bluetooth...',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-
-    try {
-      // PASSO 1: Envia configuração WiFi + API Token via Bluetooth
-      final bluetoothResult = await BluetoothService.sendConfigToESP32(
-        ssid: wifiConfig['ssid']!,
-        password: wifiConfig['password']!,
-        apiToken: device.apiToken,
-        deviceId: device.deviceId,
-      );
-
-      if (bluetoothResult['ok'] != true) {
-        Navigator.pop(context); // Fecha dialog
-        _showErrorDialog(
-          'Erro na comunicação Bluetooth',
-          bluetoothResult['error'] ?? 'Falha ao enviar dados ao ESP32',
-        );
-        return;
-      }
-
-      // Atualiza mensagem do dialog
-      Navigator.pop(context);
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const AlertDialog(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text(
-                'ESP32 conectando à rede WiFi...\nAguardando confirmação...',
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-
-      // PASSO 2: Aguarda confirmação do ESP32
-      if (bluetoothResult['wifiConnected'] != true) {
-        Navigator.pop(context);
-        _showErrorDialog(
-          'Falha na conexão WiFi',
-          'O ESP32 não conseguiu conectar à rede WiFi. Verifique as credenciais.',
-        );
-        return;
-      }
-
-      // PASSO 3: Atualiza o dispositivo na API para status ONLINE
-      final updateResult = await DeviceService.updateDevice(
-        id: device.id,
-        status: 'ONLINE',
-        token: userStore.accessToken,
-      );
-
-      Navigator.pop(context); // Fecha dialog
-
-      if (updateResult['ok'] == true) {
-        _showSuccessDialog(
-          'Dispositivo Ativado!',
-          'O ESP32 está conectado à rede WiFi (IP: ${bluetoothResult['ip']})\n\n'
-              'Agora ele pode enviar dados ao servidor automaticamente.',
-        );
-        _loadDevices();
-      } else {
-        _showErrorDialog(
-          'Erro ao atualizar status',
-          updateResult['error'] ?? 'Falha ao atualizar no servidor',
-        );
-      }
-    } catch (e) {
-      Navigator.pop(context);
-      _showErrorDialog('Erro', 'Erro inesperado: $e');
-    }
-  }
-
-  /// Dialog para solicitar credenciais WiFi
-  Future<Map<String, String>?> _showWiFiConfigDialog() async {
-    final ssidController = TextEditingController();
-    final passwordController = TextEditingController();
-
-    return showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Configurar WiFi'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Digite as credenciais da rede WiFi que o ESP32 irá usar:',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: ssidController,
-              decoration: const InputDecoration(
-                labelText: 'SSID (Nome da Rede)',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.wifi),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Senha WiFi',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-              ),
-              obscureText: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (ssidController.text.isEmpty ||
-                  passwordController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Preencha todos os campos'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context, {
-                'ssid': ssidController.text,
-                'password': passwordController.text,
-              });
-            },
-            child: const Text('Conectar'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSuccessDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 28),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showErrorDialog(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.error, color: Colors.red, size: 28),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Fechar'),
-          ),
-        ],
-      ),
-    );
   }
 }

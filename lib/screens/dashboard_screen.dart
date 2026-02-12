@@ -382,21 +382,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00D4FF), Color(0xFF0066FF)],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.devices_rounded,
-                              size: 20,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
                           const Text(
                             'Dispositivos',
                             style: TextStyle(
@@ -415,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFF00D4FF),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: 10,
                             vertical: 8,
                           ),
                           backgroundColor: const Color(0xFF1A1F3A),
@@ -430,32 +415,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 12),
 
                   // Carrossel de dispositivos
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SizedBox(
-                        height: 2000,
-                        child: PageView.builder(
-                          controller: _devicePageController,
-                          itemCount: _dashboardData!.devices.length,
-                          onPageChanged: (index) {
-                            setState(() => _currentDeviceIndex = index);
-                          },
-                          itemBuilder: (context, index) {
-                            final device = _dashboardData!.devices[index];
-                            return DeviceCard(
-                              device: device,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  '/device-details',
-                                  arguments: device.id,
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      );
+                  GestureDetector(
+                    onHorizontalDragEnd: (details) {
+                      if (details.primaryVelocity! > 0) {
+                        // Swipe para direita - dispositivo anterior
+                        if (_currentDeviceIndex > 0) {
+                          setState(() => _currentDeviceIndex--);
+                          _devicePageController.animateToPage(
+                            _currentDeviceIndex,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      } else if (details.primaryVelocity! < 0) {
+                        // Swipe para esquerda - próximo dispositivo
+                        if (_currentDeviceIndex <
+                            _dashboardData!.devices.length - 1) {
+                          setState(() => _currentDeviceIndex++);
+                          _devicePageController.animateToPage(
+                            _currentDeviceIndex,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      }
                     },
+                    child: DeviceCard(
+                      device: _dashboardData!.devices[_currentDeviceIndex],
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/device-details',
+                          arguments:
+                              _dashboardData!.devices[_currentDeviceIndex].id,
+                        );
+                      },
+                    ),
                   ),
 
                   const SizedBox(height: 20),

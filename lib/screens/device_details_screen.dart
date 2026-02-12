@@ -5,9 +5,10 @@ import 'package:latlong2/latlong.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../models/device_detail.dart';
+import '../models/device.dart';
 import '../services/device_service.dart';
-
 import '../stores/user_store.dart';
+import 'add_device_flow_screen.dart';
 
 const kBackgroundColor = Color(0xFF0A0E27);
 const kCardColor = Color(0xFF1A1F3A);
@@ -237,17 +238,37 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
   }
 
   Future<void> _activateDevice() async {
-    // Redireciona para a tela de dispositivos onde o fluxo completo de ativação existe
-    // Passa o device detail convertido para o formato que devices_screen espera
-    Navigator.pop(context, {
-      'action': 'activate',
-      'device': {
-        'id': _device!.id,
-        'deviceId': _device!.deviceId,
-        'apiToken': _device!.apiToken,
-        'name': _device!.name,
-      },
-    });
+    // Converte DeviceDetail para Device
+    final device = Device(
+      id: _device!.id,
+      name: _device!.name,
+      deviceId: _device!.deviceId,
+      apiToken: _device!.apiToken,
+      type: _device!.type,
+      status: _device!.status,
+      configStatus: _device!.configStatus,
+      description: _device!.description,
+      firmwareVersion: _device!.firmwareVersion,
+      ownerId: _device!.ownerId,
+      lastSeen: _device!.lastSeen,
+      ipAddress: _device!.ipAddress,
+      readingInterval: _device!.readingInterval,
+      createdAt: _device!.createdAt,
+      updatedAt: _device!.updatedAt,
+    );
+
+    // Redireciona para o fluxo de ativação
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddDeviceFlowScreen(existingDevice: device),
+      ),
+    );
+
+    // Se retornou true, recarrega os dados
+    if (result == true) {
+      _loadDeviceDetails();
+    }
   }
 
   @override
@@ -697,7 +718,7 @@ class _DeviceDetailsScreenState extends State<DeviceDetailsScreen> {
         Row(
           children: [
             const Text(
-              'Métricas dos Sensores',
+              'Métricas',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,

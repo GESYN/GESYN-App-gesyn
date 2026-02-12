@@ -15,7 +15,7 @@ class DeviceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final margin = screenWidth < 600 ? 4.0 : 8.0;
+    final margin = 0.0;
     final hasGPS =
         device.latestReading?.latitude != null &&
         device.latestReading?.longitude != null;
@@ -44,17 +44,16 @@ class DeviceCard extends StatelessWidget {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context),
             if (hasGPS) _buildMapSection(context),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(screenWidth < 600 ? 12 : 16),
-                child: device.latestReading != null
-                    ? _buildSensorData(context)
-                    : _buildNoData(),
-              ),
+            Padding(
+              padding: EdgeInsets.all(screenWidth < 600 ? 12 : 16),
+              child: device.latestReading != null
+                  ? _buildSensorData(context)
+                  : _buildNoData(),
             ),
           ],
         ),
