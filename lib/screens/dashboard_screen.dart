@@ -441,10 +441,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             setState(() => _currentDeviceIndex = index);
                           },
                           itemBuilder: (context, index) {
+                            final device = _dashboardData!.devices[index];
                             return DeviceCard(
-                              device: _dashboardData!.devices[index],
+                              device: device,
                               onTap: () {
-                                // TODO: Navegar para detalhes do dispositivo
+                                Navigator.pushNamed(
+                                  context,
+                                  '/device-details',
+                                  arguments: device.id,
+                                );
                               },
                             );
                           },

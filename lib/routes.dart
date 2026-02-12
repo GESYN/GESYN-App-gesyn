@@ -10,6 +10,7 @@ import 'screens/profile_screen.dart';
 import 'screens/admin_screen.dart';
 import 'screens/add_device_flow_screen.dart';
 import 'screens/devices_screen.dart';
+import 'screens/device_details_screen.dart';
 
 class AuthRoute {
   static const home = '/';
@@ -20,6 +21,7 @@ class AuthRoute {
   static const admin = '/admin';
   static const addDevice = '/add-device';
   static const devices = '/devices';
+  static const deviceDetails = '/device-details';
 }
 
 class RouteGenerator {
@@ -44,6 +46,11 @@ class RouteGenerator {
           case AuthRoute.devices:
             if (!userStore.isAuthenticated) return LoginScreen();
             return const DevicesScreen();
+          case AuthRoute.deviceDetails:
+            if (!userStore.isAuthenticated) return LoginScreen();
+            final deviceId = settings.arguments as String?;
+            if (deviceId == null) return const DashboardScreen();
+            return DeviceDetailsScreen(deviceId: deviceId);
           case AuthRoute.admin:
             if (!userStore.isAuthenticated) return LoginScreen();
             final role = userStore.user?.role ?? 'USER';

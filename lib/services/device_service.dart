@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import '../models/device.dart';
+import '../models/device_detail.dart';
 import './api_service.dart';
 
 class DeviceService {
@@ -169,6 +170,29 @@ class DeviceService {
           'error': 'Erro ao deletar dispositivo',
         };
       }
+    }
+  }
+
+  /// Busca detalhes completos de um dispositivo por ID com todas as leituras
+  static Future<DeviceDetail?> getDeviceDetailById({
+    required String id,
+    String? token,
+  }) async {
+    try {
+      final response = await ApiService.get(
+        '/api/v1/devices/$id',
+        token: token,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return DeviceDetail.fromJson(data);
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ Erro ao buscar detalhes do dispositivo: $e');
+      return null;
     }
   }
 }
